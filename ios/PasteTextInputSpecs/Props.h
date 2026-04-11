@@ -14,6 +14,7 @@
 #include <react/renderer/attributedstring/TextAttributes.h>
 #include <react/renderer/components/iostextinput/conversions.h>
 #include <react/renderer/components/iostextinput/primitives.h>
+#include <react/renderer/components/textinput/basePrimitives.h>
 #include <react/renderer/components/text/BaseTextProps.h>
 #include <react/renderer/components/view/ViewProps.h>
 #include <react/renderer/core/Props.h>
@@ -65,6 +66,8 @@ public:
     std::string const text{};
     const int mostRecentEventCount{0};
 
+    SubmitBehavior submitBehavior{SubmitBehavior::Default};
+    bool multiline{false};
     bool autoFocus{false};
     std::optional<Selection> selection{};
 

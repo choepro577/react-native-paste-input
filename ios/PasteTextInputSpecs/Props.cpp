@@ -14,6 +14,7 @@
 
 #include <react/renderer/attributedstring/conversions.h>
 #include <react/renderer/components/iostextinput/propsConversions.h>
+#include <react/renderer/components/textinput/baseConversions.h>
 #include <react/renderer/core/graphicsConversions.h>
 
 namespace facebook::react {
@@ -87,6 +88,18 @@ PasteTextInputProps::PasteTextInputProps(
         "mostRecentEventCount",
         sourceProps.mostRecentEventCount,
         {})),
+    submitBehavior(convertRawProp(
+        context,
+        rawProps,
+        "submitBehavior",
+        sourceProps.submitBehavior,
+        SubmitBehavior::Default)),
+    multiline(convertRawProp(
+        context,
+        rawProps,
+        "multiline",
+        sourceProps.multiline,
+        false)),
     autoFocus(convertRawProp(
         context,
         rawProps,
@@ -133,7 +146,7 @@ TextAttributes PasteTextInputProps::getEffectiveTextAttributes(Float fontSizeMul
 ParagraphAttributes PasteTextInputProps::getEffectiveParagraphAttributes() const {
     auto result = paragraphAttributes;
     
-    if (!traits.multiline) {
+    if (!multiline) {
         result.maximumNumberOfLines = 1;
     }
     

@@ -131,6 +131,11 @@
     "outputDir": {
       "ios": "./ios"
     },
+    "ios": {
+      "componentProvider": {
+        "PasteTextInput": "PasteTextInput"
+      }
+    },
     "android": {
       "javaPackageName": "com.mattermost.pastetextinput"
     }

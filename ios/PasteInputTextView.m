@@ -60,9 +60,6 @@
             return;
         }
     }
-    
-    // Dismiss contextual menu
-    [self resignFirstResponder];
 }
 
 @end
