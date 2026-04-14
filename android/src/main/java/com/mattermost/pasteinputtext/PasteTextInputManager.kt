@@ -62,6 +62,7 @@ class PasteTextInputManager(context: ReactApplicationContext) : ReactTextInputMa
 
     val pasteInputEditText = editText as PasteInputEditText
     val eventDispatcher = getEventDispatcher(reactContext, editText)
+    pasteInputEditText.setEventDispatcher(reactContext.surfaceId, eventDispatcher)
     pasteInputEditText.setOnPasteListener(PasteInputListener(pasteInputEditText, reactContext.surfaceId), eventDispatcher)
   }
 
@@ -70,6 +71,16 @@ class PasteTextInputManager(context: ReactApplicationContext) : ReactTextInputMa
     map["onPaste"] = MapBuilder.of<String, Any>(
       "phasedRegistrationNames",
       MapBuilder.of("bubbled", "onPaste") as Any,
+    )
+
+    return map
+  }
+
+  override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> {
+    val map = (super.getExportedCustomDirectEventTypeConstants() ?: mutableMapOf()).toMutableMap()
+    map["topContentSizeChange"] = MapBuilder.of<String, Any>(
+      "registrationName",
+      "onContentSizeChange" as Any,
     )
 
     return map
