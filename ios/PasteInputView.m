@@ -37,6 +37,14 @@
     _backedTextInputView.disableCopyPaste = disableCopyPaste;
 }
 
+- (void)setMentionRangesJson:(NSString *)mentionRangesJson {
+    _backedTextInputView.mentionRangesJson = mentionRangesJson;
+}
+
+- (void)setMentionTextColor:(UIColor *)mentionTextColor {
+    _backedTextInputView.mentionTextColor = mentionTextColor;
+}
+
 - (void)setOnPaste:(RCTDirectEventBlock)onPaste {
     _backedTextInputView.onPaste = onPaste;
 }

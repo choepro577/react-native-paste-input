@@ -28,6 +28,16 @@ class PasteTextInputManager(context: ReactApplicationContext) : ReactTextInputMa
     editText.setDisableCopyPaste(disabled)
   }
 
+  @com.facebook.react.uimanager.annotations.ReactProp(name = "mentionRangesJson")
+  fun setMentionRangesJson(editText: PasteInputEditText, rangesJson: String?) {
+    editText.setMentionRangesJson(rangesJson)
+  }
+
+  @com.facebook.react.uimanager.annotations.ReactProp(name = "mentionTextColor", customType = "Color")
+  fun setMentionTextColor(editText: PasteInputEditText, color: Int?) {
+    editText.setMentionTextColor(color)
+  }
+
   private fun getEventDispatcher(reactContext: ReactContext, editText: ReactEditText): EventDispatcher? {
     return UIManagerHelper.getEventDispatcherForReactTag(reactContext, editText.id)
   }

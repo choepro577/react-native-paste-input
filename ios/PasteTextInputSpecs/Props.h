@@ -50,6 +50,8 @@ public:
 
     std::string smartPunctuation{};
     bool disableCopyPaste{false};
+    std::string mentionRangesJson{};
+    const SharedColor mentionTextColor{};
     
     /*
      * Tint colors

@@ -189,6 +189,8 @@ export interface NativeProps extends ViewProps {
     keyboardType?: WithDefault<KeyboardType, 'default'>;
     maxFontSizeMultiplier?: Float;
     maxLength?: Int32;
+    mentionRangesJson?: string;
+    mentionTextColor?: ColorValue;
     mostRecentEventCount?: Int32;
     multiline?: boolean;
     numberOfLines?: Int32;

@@ -14,7 +14,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface PasteInputTextView : RCTUITextView
     @property (nonatomic, assign) BOOL disableCopyPaste;
+    @property (nonatomic, copy, nullable) NSString *mentionRangesJson;
+    @property (nonatomic, strong, nullable) UIColor *mentionTextColor;
     @property (nonatomic, copy, nullable) RCTDirectEventBlock onPaste;
+
+    - (NSAttributedString *)attributedStringByApplyingMentionAttributes:(NSAttributedString *)attributedText;
 @end
 
 NS_ASSUME_NONNULL_END

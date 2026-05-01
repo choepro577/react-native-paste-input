@@ -1,7 +1,10 @@
 package com.mattermost.pasteinputtext
 
 import android.annotation.SuppressLint
+import android.graphics.Color
 import android.os.Build
+import android.text.Spannable
+import android.text.style.ForegroundColorSpan
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import androidx.core.view.inputmethod.EditorInfoCompat
@@ -12,6 +15,8 @@ import com.facebook.react.uimanager.common.ViewUtil
 import com.facebook.react.uimanager.events.EventDispatcher
 import com.facebook.react.views.textinput.ReactEditText
 import java.lang.Exception
+import org.json.JSONArray
+import org.json.JSONException
 
 
 @SuppressLint("ViewConstructor")
@@ -22,9 +27,31 @@ class PasteInputEditText(context: ThemedReactContext) : ReactEditText(context) {
   private var mSurfaceId: Int = ViewUtil.NO_SURFACE_ID
   private var mPreviousContentWidth: Int = 0
   private var mPreviousContentHeight: Int = 0
+  private var mMentionRangesJson: String = "[]"
+  private var mMentionTextColor: Int = DEFAULT_MENTION_TEXT_COLOR
 
   fun setDisableCopyPaste(disabled: Boolean) {
     this.mDisabledCopyPaste = disabled
+  }
+
+  fun setMentionRangesJson(rangesJson: String?) {
+    val nextRangesJson = rangesJson ?: "[]"
+    if (mMentionRangesJson == nextRangesJson) {
+      return
+    }
+
+    mMentionRangesJson = nextRangesJson
+    applyMentionSpans()
+  }
+
+  fun setMentionTextColor(color: Int?) {
+    val nextColor = color ?: DEFAULT_MENTION_TEXT_COLOR
+    if (mMentionTextColor == nextColor) {
+      return
+    }
+
+    mMentionTextColor = nextColor
+    applyMentionSpans()
   }
 
   fun setOnPasteListener(listener: IPasteInputListener, event: EventDispatcher?) {
@@ -73,8 +100,60 @@ class PasteInputEditText(context: ThemedReactContext) : ReactEditText(context) {
     )
   }
 
+  private fun parseMentionRanges(textLength: Int): List<Pair<Int, Int>> {
+    if (mMentionRangesJson.isBlank() || mMentionRangesJson == "[]") {
+      return emptyList()
+    }
+
+    return try {
+      val ranges = mutableListOf<Pair<Int, Int>>()
+      val jsonRanges = JSONArray(mMentionRangesJson)
+      var lastEnd = 0
+
+      for (index in 0 until jsonRanges.length()) {
+        val range = jsonRanges.optJSONObject(index) ?: continue
+        val start = range.optInt("start", -1)
+        val end = range.optInt("end", -1)
+
+        if (start < 0 || end <= start || end > textLength || start < lastEnd) {
+          continue
+        }
+
+        ranges.add(start to end)
+        lastEnd = end
+      }
+
+      ranges
+    } catch (_: JSONException) {
+      emptyList()
+    }
+  }
+
+  private fun applyMentionSpans() {
+    val editable = text ?: return
+    val existingSpans = editable.getSpans(
+      0,
+      editable.length,
+      MentionForegroundColorSpan::class.java,
+    )
+
+    for (span in existingSpans) {
+      editable.removeSpan(span)
+    }
+
+    for ((start, end) in parseMentionRanges(editable.length)) {
+      editable.setSpan(
+        MentionForegroundColorSpan(mMentionTextColor),
+        start,
+        end,
+        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
+      )
+    }
+  }
+
   override fun onTextChanged(text: CharSequence?, start: Int, lengthBefore: Int, lengthAfter: Int) {
     super.onTextChanged(text, start, lengthBefore, lengthAfter)
+    applyMentionSpans()
     dispatchContentSizeChange()
   }
 
@@ -107,4 +186,10 @@ class PasteInputEditText(context: ThemedReactContext) : ReactEditText(context) {
 
     return InputConnectionCompat.createWrapper(ic!!, outAttrs, callback)
   }
+
+  companion object {
+    private val DEFAULT_MENTION_TEXT_COLOR = Color.rgb(24, 144, 255)
+  }
 }
+
+private class MentionForegroundColorSpan(color: Int) : ForegroundColorSpan(color)

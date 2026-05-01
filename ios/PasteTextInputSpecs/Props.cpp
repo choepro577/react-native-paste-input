@@ -28,6 +28,8 @@ PasteTextInputProps::PasteTextInputProps(
     traits(convertRawProp(context, rawProps, sourceProps.traits, {})),
     smartPunctuation(convertRawProp(context, rawProps, "smartPunctuation", sourceProps.smartPunctuation, {})),
     disableCopyPaste(convertRawProp(context, rawProps, "disableCopyPaste", sourceProps.disableCopyPaste, {false})),
+    mentionRangesJson(convertRawProp(context, rawProps, "mentionRangesJson", sourceProps.mentionRangesJson, {})),
+    mentionTextColor(convertRawProp(context, rawProps, "mentionTextColor", sourceProps.mentionTextColor, {})),
     paragraphAttributes(convertRawProp(
         context,
         rawProps,

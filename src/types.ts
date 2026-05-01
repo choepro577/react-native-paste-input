@@ -1,5 +1,5 @@
 import type { ForwardedRef } from 'react';
-import type { HostComponent, TextInputProps } from 'react-native';
+import type { ColorValue, HostComponent, TextInputProps } from 'react-native';
 import type { Int32 } from 'react-native/Libraries/Types/CodegenTypes';
 
 export type PasteTextInputInstance = React.ElementRef<
@@ -27,9 +27,17 @@ export interface PasteEvent {
     };
 }
 
+export interface MentionRangeStyle {
+    start: number;
+    end: number;
+    kind?: string;
+}
+
 export interface PasteInputProps extends TextInputProps {
     forwardedRef?: ForwardedRef<PasteTextInputInstance>;
     disableCopyPaste?: boolean;
+    mentionRanges?: MentionRangeStyle[];
+    mentionTextColor?: ColorValue;
     onPaste(error: string | null | undefined, files: Array<PastedFile>): void;
     submitBehavior?: SubmitBehavior;
     smartPunctuation?: SmartPunctuation;
@@ -37,6 +45,8 @@ export interface PasteInputProps extends TextInputProps {
 
 export interface RCTPasteInputProps extends TextInputProps {
     disableCopyPaste?: boolean;
+    mentionRangesJson?: string;
+    mentionTextColor?: ColorValue;
     mostRecentEventCount: number;
     onPaste(event: PasteEvent): void;
     smartPunctuation?: SmartPunctuation;

@@ -32,6 +32,8 @@
 RCT_EXPORT_MODULE(PasteTextInput)
 
 RCT_EXPORT_VIEW_PROPERTY(disableCopyPaste, BOOL)
+RCT_EXPORT_VIEW_PROPERTY(mentionRangesJson, NSString)
+RCT_EXPORT_VIEW_PROPERTY(mentionTextColor, UIColor)
 RCT_EXPORT_VIEW_PROPERTY(smartPunctuation, NSString)
 
 RCT_EXPORT_VIEW_PROPERTY(onPaste, RCTBubblingEventBlock)

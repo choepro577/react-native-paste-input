@@ -225,6 +225,14 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
   if (newTextInputProps.smartPunctuation != oldTextInputProps.smartPunctuation) {
       [self _setSmartPunctuation:[[NSString alloc] initWithCString:newTextInputProps.smartPunctuation.c_str() encoding:NSASCIIStringEncoding]];
   }
+
+  if (newTextInputProps.mentionRangesJson != oldTextInputProps.mentionRangesJson) {
+    _backedTextInputView.mentionRangesJson = RCTNSStringFromString(newTextInputProps.mentionRangesJson);
+  }
+
+  if (newTextInputProps.mentionTextColor != oldTextInputProps.mentionTextColor) {
+    _backedTextInputView.mentionTextColor = RCTUIColorFromSharedColor(newTextInputProps.mentionTextColor);
+  }
     
   if (newTextInputProps.disableCopyPaste != oldTextInputProps.disableCopyPaste) {
     _backedTextInputView.disableCopyPaste = newTextInputProps.disableCopyPaste;
@@ -594,25 +602,27 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
 
 - (void)_setAttributedString:(NSAttributedString *)attributedString
 {
-  if ([self _textOf:attributedString equals:_backedTextInputView.attributedText]) {
+  NSAttributedString *styledAttributedString =
+      [_backedTextInputView attributedStringByApplyingMentionAttributes:attributedString];
+  if ([self _textOf:styledAttributedString equals:_backedTextInputView.attributedText]) {
     return;
   }
   UITextRange *selectedRange = _backedTextInputView.selectedTextRange;
   NSInteger oldTextLength = _backedTextInputView.attributedText.string.length;
-  _backedTextInputView.attributedText = attributedString;
+  _backedTextInputView.attributedText = styledAttributedString;
   if (selectedRange.empty) {
     // Maintaining a cursor position relative to the end of the old text.
     NSInteger offsetStart = [_backedTextInputView offsetFromPosition:_backedTextInputView.beginningOfDocument
                                                           toPosition:selectedRange.start];
     NSInteger offsetFromEnd = oldTextLength - offsetStart;
-    NSInteger newOffset = attributedString.string.length - offsetFromEnd;
+    NSInteger newOffset = styledAttributedString.string.length - offsetFromEnd;
     UITextPosition *position = [_backedTextInputView positionFromPosition:_backedTextInputView.beginningOfDocument
                                                                    offset:newOffset];
     [_backedTextInputView setSelectedTextRange:[_backedTextInputView textRangeFromPosition:position toPosition:position]
                                 notifyDelegate:YES];
   }
   [self _restoreTextSelection];
-  _lastStringStateWasUpdatedWith = attributedString;
+  _lastStringStateWasUpdatedWith = _backedTextInputView.attributedText;
 }
 
 -(void)_setOnPaste{
@@ -650,6 +660,8 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
   PasteInputTextView *backedTextInputView = [[PasteInputTextView alloc] initWithFrame:self.bounds];
   backedTextInputView.frame = _backedTextInputView.frame;
   RCTCopyBackedTextInput(_backedTextInputView, backedTextInputView);
+  backedTextInputView.mentionRangesJson = _backedTextInputView.mentionRangesJson;
+  backedTextInputView.mentionTextColor = _backedTextInputView.mentionTextColor;
   _backedTextInputView = backedTextInputView;
   [self _setOnPaste];
   [self addSubview:_backedTextInputView];

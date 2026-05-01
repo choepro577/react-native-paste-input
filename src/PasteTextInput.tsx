@@ -3,6 +3,7 @@ import PasteTextInputNativeComponent, {
     Commands,
 } from './PasteTextInputNativeComponent';
 import type {
+    MentionRangeStyle,
     PasteEvent,
     PasteInputProps,
     PasteTextInputInstance,
@@ -30,6 +31,30 @@ import flattenStyle from 'react-native/Libraries/StyleSheet/flattenStyle';
 import nullthrows from 'nullthrows';
 
 const emptyFunctionThatReturnsTrue = () => true;
+
+function serializeMentionRanges(
+    mentionRanges: MentionRangeStyle[] | undefined
+): string {
+    if (!Array.isArray(mentionRanges) || mentionRanges.length === 0) {
+        return '[]';
+    }
+
+    const normalizedRanges = mentionRanges
+        .map((range) => ({
+            start: Math.trunc(Number(range.start)),
+            end: Math.trunc(Number(range.end)),
+            kind: typeof range.kind === 'string' ? range.kind : undefined,
+        }))
+        .filter(
+            (range) =>
+                Number.isFinite(range.start) &&
+                Number.isFinite(range.end) &&
+                range.start >= 0 &&
+                range.end > range.start
+        );
+
+    return JSON.stringify(normalizedRanges);
+}
 
 function useMergeRefs<Instance>(
     ...refs: ReadonlyArray<React.ForwardedRef<Instance> | null | undefined>
@@ -62,6 +87,8 @@ function InternalTextInput(props: PasteInputProps): React.ReactNode {
         tabIndex,
         'selection': propsSelection,
         selectionColor,
+        mentionRanges,
+        mentionTextColor,
         // selectionHandleColor,
         // cursorColor,
         ...otherProps
@@ -102,6 +129,10 @@ function InternalTextInput(props: PasteInputProps): React.ReactNode {
             : typeof props.defaultValue === 'string'
               ? props.defaultValue
               : '';
+    const mentionRangesJson = React.useMemo(
+        () => serializeMentionRanges(mentionRanges),
+        [mentionRanges]
+    );
 
     // This is necessary in case native updates the text and JS decides
     // that the update should be ignored and we should stick with the value
@@ -398,6 +429,8 @@ function InternalTextInput(props: PasteInputProps): React.ReactNode {
             dataDetectorTypes={props.dataDetectorTypes}
             focusable={tabIndex !== undefined ? !tabIndex : focusable}
             mostRecentEventCount={mostRecentEventCount}
+            mentionRangesJson={mentionRangesJson}
+            mentionTextColor={mentionTextColor}
             nativeID={id ?? props.nativeID}
             onBlur={_onBlur}
             onChange={_onChange}
