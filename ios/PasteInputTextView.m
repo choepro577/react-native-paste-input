@@ -219,9 +219,35 @@ static NSString *const PasteInputMentionAttributeName = @"PasteInputMentionAttri
         return;
     }
 
+    UITextRange *selectedRange = self.selectedTextRange;
+    NSInteger selectionStart = NSNotFound;
+    NSInteger selectionEnd = NSNotFound;
+    if (selectedRange) {
+        selectionStart = [self offsetFromPosition:self.beginningOfDocument toPosition:selectedRange.start];
+        selectionEnd = [self offsetFromPosition:self.beginningOfDocument toPosition:selectedRange.end];
+    }
+
     self.applyingMentionAttributes = YES;
     [super setAttributedText:[self attributedStringByApplyingMentionAttributes:self.attributedText]];
     self.applyingMentionAttributes = NO;
+
+    if (selectionStart == NSNotFound || selectionEnd == NSNotFound) {
+        return;
+    }
+
+    NSInteger textLength = (NSInteger)self.attributedText.length;
+    NSInteger clampedStart = MAX(0, MIN(selectionStart, textLength));
+    NSInteger clampedEnd = MAX(0, MIN(selectionEnd, textLength));
+    UITextPosition *startPosition = [self positionFromPosition:self.beginningOfDocument offset:clampedStart];
+    UITextPosition *endPosition = [self positionFromPosition:self.beginningOfDocument offset:clampedEnd];
+    if (!startPosition || !endPosition) {
+        return;
+    }
+
+    UITextRange *restoredRange = [self textRangeFromPosition:startPosition toPosition:endPosition];
+    if (restoredRange) {
+        [self setSelectedTextRange:restoredRange notifyDelegate:NO];
+    }
 }
 
 @end

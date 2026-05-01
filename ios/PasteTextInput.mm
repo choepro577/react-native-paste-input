@@ -583,10 +583,22 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
   if (!selection.has_value()) {
     return;
   }
+
+  NSInteger textLength = _backedTextInputView.attributedText.string.length;
+  NSInteger selectionStart = MAX(0, MIN((NSInteger)selection->start, textLength));
+  NSInteger selectionEnd = MAX(0, MIN((NSInteger)selection->end, textLength));
   auto start = [_backedTextInputView positionFromPosition:_backedTextInputView.beginningOfDocument
-                                                   offset:selection->start];
-  auto end = [_backedTextInputView positionFromPosition:_backedTextInputView.beginningOfDocument offset:selection->end];
+                                                   offset:selectionStart];
+  auto end = [_backedTextInputView positionFromPosition:_backedTextInputView.beginningOfDocument offset:selectionEnd];
+  if (!start || !end) {
+    return;
+  }
+
   auto range = [_backedTextInputView textRangeFromPosition:start toPosition:end];
+  if (!range) {
+    return;
+  }
+
   [_backedTextInputView setSelectedTextRange:range notifyDelegate:YES];
 }
 
