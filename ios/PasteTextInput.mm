@@ -26,6 +26,7 @@ using namespace facebook::react;
 @implementation PasteTextInput {
     PasteTextInputShadowNode::ConcreteState::Shared _state;
     PasteInputTextView *_backedTextInputView;
+    CGSize _previousContentSize;
     BOOL _ignoreNextTextInputCall;
     NSUInteger _mostRecentEventCount;
     NSAttributedString *_lastStringStateWasUpdatedWith;
@@ -91,6 +92,7 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
         _backedTextInputView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         _backedTextInputView.textInputDelegate = self;
         [self _setOnPaste];
+        _previousContentSize = CGSizeZero;
         _ignoreNextTextInputCall = NO;
         _comingFromJS = NO;
         _didMoveToWindow = NO;
@@ -276,10 +278,7 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
   _backedTextInputView.textContainerInset =
       RCTUIEdgeInsetsFromEdgeInsets(layoutMetrics.contentInsets - layoutMetrics.borderWidth);
 
-  if (_eventEmitter) {
-      const auto eventEmitter = [self getEventEmitter];
-      eventEmitter->onContentSizeChange([self _textInputMetrics]);
-  }
+  [self emitContentSizeChangeIfNeeded];
 }
 
 - (void)prepareForRecycle
@@ -291,6 +290,7 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
   _comingFromJS = NO;
   _lastStringStateWasUpdatedWith = nil;
   _ignoreNextTextInputCall = NO;
+  _previousContentSize = CGSizeZero;
   _didMoveToWindow = NO;
   [_backedTextInputView resignFirstResponder];
 }
@@ -421,6 +421,8 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
     const auto &textInputEventEmitter = static_cast<const TextInputEventEmitter &>(*_eventEmitter);
     textInputEventEmitter.onChange([self _textInputMetrics]);
   }
+
+  [self emitContentSizeChangeIfNeeded];
 }
 
 - (void)textInputDidChangeSelection
@@ -438,6 +440,8 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
     const auto eventEmitter = [self getEventEmitter];
     eventEmitter->onSelectionChange([self _textInputMetrics]);
   }
+
+  [self emitContentSizeChangeIfNeeded];
 }
 
 #pragma mark - RCTBackedTextInputDelegate (UIScrollViewDelegate)
@@ -493,6 +497,8 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
     [_backedTextInputView setSelectedTextRange:range notifyDelegate:NO];
   }
   _comingFromJS = NO;
+
+  [self emitContentSizeChangeIfNeeded];
 }
 
 #pragma mark - Default input accessory view
@@ -575,6 +581,22 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
   _mostRecentEventCount += _comingFromJS ? 0 : 1;
   data.mostRecentEventCount = _mostRecentEventCount;
   _state->updateState(std::move(data));
+}
+
+- (void)emitContentSizeChangeIfNeeded
+{
+  if (!_eventEmitter) {
+    return;
+  }
+
+  CGSize nextContentSize = _backedTextInputView.contentSize;
+  if (CGSizeEqualToSize(_previousContentSize, nextContentSize)) {
+    return;
+  }
+
+  _previousContentSize = nextContentSize;
+  const auto eventEmitter = [self getEventEmitter];
+  eventEmitter->onContentSizeChange([self _textInputMetrics]);
 }
 
 - (void)_restoreTextSelection
