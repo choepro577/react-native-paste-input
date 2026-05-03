@@ -56,6 +56,7 @@ class PasteTextInputManager(context: ReactApplicationContext) : ReactTextInputMa
     val eventDispatcher = getEventDispatcher(mContext, editText)
     editText.customInsertionActionModeCallback = PasteInputActionCallback(editText, disableCopyPaste, eventDispatcher)
     editText.customSelectionActionModeCallback = PasteInputActionCallback(editText, disableCopyPaste, eventDispatcher)
+    editText.syncMultilineMode(false)
 
     return editText
   }
@@ -63,8 +64,7 @@ class PasteTextInputManager(context: ReactApplicationContext) : ReactTextInputMa
   override fun onAfterUpdateTransaction(view: ReactEditText) {
     super.onAfterUpdateTransaction(view)
     val multiline = (view.inputType and InputType.TYPE_TEXT_FLAG_MULTI_LINE) != 0
-    view.setSingleLine(!multiline)
-    view.setHorizontallyScrolling(!multiline)
+    (view as? PasteInputEditText)?.syncMultilineMode(multiline)
   }
 
   override fun addEventEmitters(reactContext: ThemedReactContext, editText: ReactEditText) {

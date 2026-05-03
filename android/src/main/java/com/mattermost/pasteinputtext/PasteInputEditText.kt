@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.os.Build
 import android.text.Spannable
 import android.text.style.ForegroundColorSpan
+import android.view.Gravity
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import androidx.core.view.inputmethod.EditorInfoCompat
@@ -29,6 +30,10 @@ class PasteInputEditText(context: ThemedReactContext) : ReactEditText(context) {
   private var mPreviousContentHeight: Int = 0
   private var mMentionRangesJson: String = "[]"
   private var mMentionTextColor: Int = DEFAULT_MENTION_TEXT_COLOR
+  private var mIsMultiline: Boolean = false
+  private val dispatchContentSizeChangeRunnable = Runnable {
+    dispatchContentSizeChangeNow()
+  }
 
   fun setDisableCopyPaste(disabled: Boolean) {
     this.mDisabledCopyPaste = disabled
@@ -68,7 +73,7 @@ class PasteInputEditText(context: ThemedReactContext) : ReactEditText(context) {
     return mOnPasteListener
   }
 
-  private fun dispatchContentSizeChange() {
+  private fun dispatchContentSizeChangeNow() {
     val eventDispatcher = mEventDispatcher ?: return
 
     var contentWidth = width
@@ -98,6 +103,36 @@ class PasteInputEditText(context: ThemedReactContext) : ReactEditText(context) {
         toDIPFromPixel(contentHeight.toFloat()),
       ),
     )
+  }
+
+  private fun scheduleContentSizeChangeDispatch() {
+    removeCallbacks(dispatchContentSizeChangeRunnable)
+    post(dispatchContentSizeChangeRunnable)
+  }
+
+  private fun updateGravityForCurrentContent() {
+    val textValue = text?.toString()?.replace("\r\n", "\n") ?: ""
+    val explicitLineCount = if (textValue.isEmpty()) {
+      1
+    } else {
+      textValue.split("\n").size
+    }
+    val layoutLineCount = layout?.lineCount ?: lineCount
+    val shouldTopAlign = mIsMultiline && maxOf(explicitLineCount, layoutLineCount) > 1
+
+    gravity = if (shouldTopAlign) {
+      Gravity.TOP or Gravity.START
+    } else {
+      Gravity.CENTER_VERTICAL or Gravity.START
+    }
+  }
+
+  fun syncMultilineMode(multiline: Boolean) {
+    mIsMultiline = multiline
+    setSingleLine(!multiline)
+    setHorizontallyScrolling(!multiline)
+    updateGravityForCurrentContent()
+    scheduleContentSizeChangeDispatch()
   }
 
   private fun parseMentionRanges(textLength: Int): List<Pair<Int, Int>> {
@@ -154,12 +189,27 @@ class PasteInputEditText(context: ThemedReactContext) : ReactEditText(context) {
   override fun onTextChanged(text: CharSequence?, start: Int, lengthBefore: Int, lengthAfter: Int) {
     super.onTextChanged(text, start, lengthBefore, lengthAfter)
     applyMentionSpans()
-    dispatchContentSizeChange()
+    updateGravityForCurrentContent()
+    scheduleContentSizeChangeDispatch()
   }
 
   override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
     super.onLayout(changed, left, top, right, bottom)
-    dispatchContentSizeChange()
+    updateGravityForCurrentContent()
+    scheduleContentSizeChangeDispatch()
+  }
+
+  override fun onSelectionChanged(selStart: Int, selEnd: Int) {
+    super.onSelectionChanged(selStart, selEnd)
+    if (mIsMultiline) {
+      updateGravityForCurrentContent()
+      scheduleContentSizeChangeDispatch()
+    }
+  }
+
+  override fun onDetachedFromWindow() {
+    removeCallbacks(dispatchContentSizeChangeRunnable)
+    super.onDetachedFromWindow()
   }
 
   override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection {

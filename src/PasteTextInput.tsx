@@ -163,9 +163,9 @@ function InternalTextInput(props: PasteInputProps): React.ReactNode {
             Commands.setTextAndSelection(
                 inputRef.current,
                 mostRecentEventCount,
-                text,
-                selection?.start ?? -1,
-                selection?.end ?? -1
+                nativeUpdate.text ?? null,
+                nativeUpdate.selection?.start ?? -1,
+                nativeUpdate.selection?.end ?? -1
             );
         }
     }, [
@@ -176,7 +176,6 @@ function InternalTextInput(props: PasteInputProps): React.ReactNode {
         lastNativeText,
         selection,
         lastNativeSelection,
-        text,
     ]);
 
     React.useLayoutEffect(() => {

@@ -410,7 +410,7 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
     return;
   }
 
-  if (_ignoreNextTextInputCall && [_lastStringStateWasUpdatedWith isEqual:_backedTextInputView.attributedText]) {
+  if (_ignoreNextTextInputCall && [self _backedTextInputMatchesLastStateByPlainText]) {
     _ignoreNextTextInputCall = NO;
     return;
   }
@@ -429,7 +429,7 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
     return;
   }
   const auto &props = static_cast<const PasteTextInputProps &>(*_props);
-  if (props.multiline && ![_lastStringStateWasUpdatedWith isEqual:_backedTextInputView.attributedText]) {
+  if (props.multiline && ![self _backedTextInputMatchesLastStateByPlainText]) {
     [self textInputDidChange];
     _ignoreNextTextInputCall = YES;
   }
@@ -635,6 +635,13 @@ std::int32_t convertNSDictionaryValueToStdInt(NSDictionary *dictionary, NSString
   }
   [self _restoreTextSelection];
   _lastStringStateWasUpdatedWith = _backedTextInputView.attributedText;
+}
+
+- (BOOL)_backedTextInputMatchesLastStateByPlainText
+{
+  NSString *currentPlainText = _backedTextInputView.attributedText.string ?: @"";
+  NSString *lastPlainText = _lastStringStateWasUpdatedWith.string ?: @"";
+  return [currentPlainText isEqualToString:lastPlainText];
 }
 
 -(void)_setOnPaste{

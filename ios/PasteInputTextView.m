@@ -213,6 +213,49 @@ static NSString *const PasteInputMentionAttributeName = @"PasteInputMentionAttri
     return mutableText;
 }
 
+- (void)applyMentionAttributesToTextStorage:(NSTextStorage *)textStorage
+{
+    if (textStorage == nil || textStorage.length == 0) {
+        return;
+    }
+
+    NSRange fullRange = NSMakeRange(0, textStorage.length);
+    UIColor *baseTextColor = [self defaultMentionBaseTextColor];
+    NSMutableArray<NSValue *> *existingMentionRanges = [NSMutableArray array];
+
+    [textStorage enumerateAttribute:PasteInputMentionAttributeName
+                            inRange:fullRange
+                            options:0
+                         usingBlock:^(id value, NSRange range, BOOL *stop) {
+        if (value) {
+            [existingMentionRanges addObject:[NSValue valueWithRange:range]];
+        }
+    }];
+
+    [textStorage beginEditing];
+
+    for (NSValue *rangeValue in existingMentionRanges) {
+        NSRange range = [rangeValue rangeValue];
+        [textStorage removeAttribute:PasteInputMentionAttributeName range:range];
+        if (baseTextColor) {
+            [textStorage addAttribute:NSForegroundColorAttributeName value:baseTextColor range:range];
+        } else {
+            [textStorage removeAttribute:NSForegroundColorAttributeName range:range];
+        }
+    }
+
+    for (NSDictionary *rangeItem in [self validMentionRangesForTextLength:textStorage.length]) {
+        NSUInteger start = [rangeItem[@"start"] unsignedIntegerValue];
+        NSUInteger end = [rangeItem[@"end"] unsignedIntegerValue];
+        NSRange mentionRange = NSMakeRange(start, end - start);
+
+        [textStorage addAttribute:NSForegroundColorAttributeName value:self.mentionTextColor range:mentionRange];
+        [textStorage addAttribute:PasteInputMentionAttributeName value:@YES range:mentionRange];
+    }
+
+    [textStorage endEditing];
+}
+
 - (void)reapplyMentionAttributesToCurrentText
 {
     if (self.attributedText == nil) {
@@ -227,9 +270,15 @@ static NSString *const PasteInputMentionAttributeName = @"PasteInputMentionAttri
         selectionEnd = [self offsetFromPosition:self.beginningOfDocument toPosition:selectedRange.end];
     }
 
+    CGPoint preservedContentOffset = self.contentOffset;
+
     self.applyingMentionAttributes = YES;
-    [super setAttributedText:[self attributedStringByApplyingMentionAttributes:self.attributedText]];
+    [self applyMentionAttributesToTextStorage:self.textStorage];
     self.applyingMentionAttributes = NO;
+
+    if (!CGPointEqualToPoint(self.contentOffset, preservedContentOffset)) {
+        self.contentOffset = preservedContentOffset;
+    }
 
     if (selectionStart == NSNotFound || selectionEnd == NSNotFound) {
         return;
