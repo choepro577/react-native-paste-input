@@ -28,10 +28,12 @@ class PasteInputEditText(context: ThemedReactContext) : ReactEditText(context) {
   private var mSurfaceId: Int = ViewUtil.NO_SURFACE_ID
   private var mPreviousContentWidth: Int = 0
   private var mPreviousContentHeight: Int = 0
-  private var mMentionRangesJson: String = "[]"
+  // ReactEditText can call onTextChanged from its constructor, before this
+  // subclass has initialized its fields. Keep constructor-time reads nullable.
+  private var mMentionRangesJson: String? = "[]"
   private var mMentionTextColor: Int = DEFAULT_MENTION_TEXT_COLOR
   private var mIsMultiline: Boolean = false
-  private val dispatchContentSizeChangeRunnable = Runnable {
+  private val dispatchContentSizeChangeRunnable: Runnable? = Runnable {
     dispatchContentSizeChangeNow()
   }
 
@@ -106,8 +108,9 @@ class PasteInputEditText(context: ThemedReactContext) : ReactEditText(context) {
   }
 
   private fun scheduleContentSizeChangeDispatch() {
-    removeCallbacks(dispatchContentSizeChangeRunnable)
-    post(dispatchContentSizeChangeRunnable)
+    val runnable = dispatchContentSizeChangeRunnable ?: return
+    removeCallbacks(runnable)
+    post(runnable)
   }
 
   private fun updateGravityForCurrentContent() {
@@ -136,13 +139,14 @@ class PasteInputEditText(context: ThemedReactContext) : ReactEditText(context) {
   }
 
   private fun parseMentionRanges(textLength: Int): List<Pair<Int, Int>> {
-    if (mMentionRangesJson.isBlank() || mMentionRangesJson == "[]") {
+    val rangesJson = mMentionRangesJson ?: "[]"
+    if (rangesJson.isBlank() || rangesJson == "[]") {
       return emptyList()
     }
 
     return try {
       val ranges = mutableListOf<Pair<Int, Int>>()
-      val jsonRanges = JSONArray(mMentionRangesJson)
+      val jsonRanges = JSONArray(rangesJson)
       var lastEnd = 0
 
       for (index in 0 until jsonRanges.length()) {
@@ -208,7 +212,7 @@ class PasteInputEditText(context: ThemedReactContext) : ReactEditText(context) {
   }
 
   override fun onDetachedFromWindow() {
-    removeCallbacks(dispatchContentSizeChangeRunnable)
+    dispatchContentSizeChangeRunnable?.let(::removeCallbacks)
     super.onDetachedFromWindow()
   }
 
