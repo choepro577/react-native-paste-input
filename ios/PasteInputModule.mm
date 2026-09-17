@@ -9,6 +9,7 @@
 #import "UIPasteboard+GetImageInfo.h"
 
 #import <React/RCTUIManager.h>
+#import <React/RCTBackedTextInputViewProtocol.h>
 #import <objc/runtime.h>
 #import <objc/message.h>
 
@@ -43,6 +44,7 @@ static UIColor *PasteInputColorFromARGB(NSNumber *value)
 // Forward declarations for IMP functions
 static void pasteInputInterceptedPasteIMP(id self, SEL _cmd, id sender);
 static BOOL pasteInputCanPerformActionIMP(id self, SEL _cmd, SEL action, id sender);
+static void pasteInputSetAttributedTextIMP(id self, SEL _cmd, NSAttributedString *text);
 
 @interface PasteInputModule ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, UIView *> *registeredViews;
@@ -299,6 +301,20 @@ RCT_EXPORT_MODULE()
 
 #pragma mark - Dynamic Subclassing
 
+- (nullable UIColor *)baseTextColorForView:(UIView *)view
+{
+    if ([view respondsToSelector:@selector(defaultTextAttributes)]) {
+        NSDictionary *attributes = [(id<RCTBackedTextInputViewProtocol>)view defaultTextAttributes];
+        UIColor *color = attributes[NSForegroundColorAttributeName];
+        if ([color isKindOfClass:[UIColor class]]) {
+            return color;
+        }
+    }
+    return [view isKindOfClass:[UITextView class]]
+        ? ((UITextView *)view).textColor
+        : ((UITextField *)view).textColor;
+}
+
 - (NSArray<NSValue *> *)validMentionRangesForTextLength:(NSUInteger)textLength config:(NSDictionary *)config
 {
     NSString *rangesJson = config[@"mentionRangesJson"];
@@ -373,18 +389,22 @@ RCT_EXPORT_MODULE()
     if ([view isKindOfClass:[UITextView class]]) {
         UITextView *textView = (UITextView *)view;
         CGPoint contentOffset = textView.contentOffset;
+        UITextRange *selection = textView.selectedTextRange;
         [textView.textStorage beginEditing];
         [self applyMentionFormattingToAttributedString:textView.textStorage
-                                             baseColor:textView.textColor
+                                             baseColor:[self baseTextColorForView:view]
                                                 config:config];
         [textView.textStorage endEditing];
+        if (selection && [view respondsToSelector:@selector(setSelectedTextRange:notifyDelegate:)]) {
+            [(id<RCTBackedTextInputViewProtocol>)view setSelectedTextRange:selection notifyDelegate:NO];
+        }
         textView.contentOffset = contentOffset;
     } else if ([view isKindOfClass:[UITextField class]]) {
         UITextField *textField = (UITextField *)view;
         NSMutableAttributedString *text = [textField.attributedText mutableCopy];
         if (text != nil) {
             [self applyMentionFormattingToAttributedString:text
-                                                 baseColor:textField.textColor
+                                                 baseColor:[self baseTextColorForView:view]
                                                     config:config];
             textField.attributedText = text;
         }
@@ -492,6 +512,13 @@ RCT_EXPORT_MODULE()
             class_addMethod(dynamicClass, @selector(canPerformAction:withSender:), (IMP)pasteInputCanPerformActionIMP, encoding);
         }
 
+        // Fabric can replace attributedText after the JS config update. Keep
+        // the same setter behavior as the original mention-aware text view.
+        Method textMethod = class_getInstanceMethod(originalClass, @selector(setAttributedText:));
+        if (textMethod) {
+            class_addMethod(dynamicClass, @selector(setAttributedText:), (IMP)pasteInputSetAttributedTextIMP, method_getTypeEncoding(textMethod));
+        }
+
         // Register the class
         objc_registerClassPair(dynamicClass);
     }
@@ -532,6 +559,22 @@ RCT_EXPORT_MODULE()
 }
 
 #pragma mark - Intercepted Methods (C functions for IMP)
+
+static void pasteInputSetAttributedTextIMP(id self, SEL _cmd, NSAttributedString *text)
+{
+    PasteInputModule *module = objc_getAssociatedObject(self, kPasteInputModuleKey);
+    NSDictionary *config = objc_getAssociatedObject(self, kPasteInputConfigKey);
+    Class originalClass = objc_getAssociatedObject(self, kOriginalClassKey);
+    NSMutableAttributedString *formatted = nil;
+    if (module && config && text) {
+        formatted = [text mutableCopy];
+        [module applyMentionFormattingToAttributedString:formatted
+                                              baseColor:[module baseTextColorForView:self]
+                                                 config:config];
+    }
+    struct objc_super superData = { .receiver = self, .super_class = originalClass };
+    ((void(*)(struct objc_super *, SEL, id))objc_msgSendSuper)(&superData, _cmd, formatted ?: text);
+}
 
 /**
  * Intercepted paste: implementation

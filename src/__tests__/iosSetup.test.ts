@@ -22,3 +22,18 @@ test('resolves the React host after Expo starts its scene, not during setup', ()
     expect(presenter).toContain('id reactHost = _rootViewFactory.reactHost;');
     expect(presenter).toContain('[reactHost performSelector:');
 });
+
+test('keeps mention color and selection when Fabric replaces attributed text', () => {
+    const source = readFileSync(
+        join(__dirname, '../../ios/PasteInputModule.mm'),
+        'utf8'
+    );
+    expect(source).toContain(
+        'class_addMethod(dynamicClass, @selector(setAttributedText:), (IMP)pasteInputSetAttributedTextIMP'
+    );
+    expect(source).toContain('defaultTextAttributes];');
+    expect(source).toContain(
+        'setSelectedTextRange:selection notifyDelegate:NO'
+    );
+    expect(source).toContain('textView.contentOffset = contentOffset;');
+});
