@@ -15,8 +15,10 @@ Pod::Spec.new do |s|
   s.module_name  = "react_native_paste_input"
   s.swift_version = '5.0'
   s.pod_target_xcconfig = { "DEFINES_MODULE" => "YES" }
+  s.module_map = "ios/react-native-paste-input.modulemap"
 
   s.source_files = "ios/**/*.{h,m,mm,swift,cpp}"
+  s.public_header_files = "ios/PasteInputSetup.h"
 
   if ENV['RCT_NEW_ARCH_ENABLED'] != '1'
     raise Pod::Informative, "react-native-paste-input #{package["version"]} requires the React Native New Architecture (Fabric/TurboModules)."

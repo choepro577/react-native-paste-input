@@ -30,7 +30,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             launchOptions: launchOptions
         )
       
-        PasteInputModule.setup(factory.rootViewFactory)
+        PasteInputSetup.setup(factory.rootViewFactory)
 
         return true
     }

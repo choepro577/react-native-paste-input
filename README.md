@@ -21,7 +21,7 @@ npm install --save-exact @mattermost/react-native-paste-input
 
 ### iOS Setup (Required)
 
-You need to call `PasteInputModule.setup` from your `AppDelegate` so the library can locate native views. Choose the snippet that matches your AppDelegate style.
+You need to call `PasteInputSetup.setup` from your `AppDelegate` so the library can locate native views. Choose the snippet that matches your AppDelegate style.
 
 #### AppDelegate.swift
 
@@ -57,7 +57,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             launchOptions: launchOptions
         )
 
-        PasteInputModule.setup(factory.rootViewFactory)
+        PasteInputSetup.setup(factory.rootViewFactory)
 
         return true
     }
@@ -227,7 +227,7 @@ This library uses a hybrid approach to provide paste interception across platfor
 ### iOS: Views not being registered
 
 If you see errors about views not being found:
-1. Ensure you've called `PasteInputModule.setup` in your AppDelegate (see iOS Setup above)
+1. Ensure you've called `PasteInputSetup.setup` in your AppDelegate (see iOS Setup above)
 2. Make sure you've run `pod install` after adding the library
 3. Clean build folder and rebuild: `cd ios && rm -rf build && cd .. && npx react-native run-ios`
 

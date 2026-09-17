@@ -1,0 +1,4 @@
+module react_native_paste_input {
+  header "PasteInputSetup.h"
+  export *
+}
