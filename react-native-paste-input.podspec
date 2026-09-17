@@ -12,7 +12,9 @@ Pod::Spec.new do |s|
 
   s.platforms    = { :ios => "15.1" }
   s.source       = { :git => "https://github.com/mattermost/react-native-paste-input.git", :tag => "#{s.version}" }
+  s.module_name  = "react_native_paste_input"
   s.swift_version = '5.0'
+  s.pod_target_xcconfig = { "DEFINES_MODULE" => "YES" }
 
   s.source_files = "ios/**/*.{h,m,mm,swift,cpp}"
 
