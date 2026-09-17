@@ -51,7 +51,7 @@ static BOOL pasteInputCanPerformActionIMP(id self, SEL _cmd, SEL action, id send
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *registrationGenerations;
 @end
 
-static id _reactHost = nil;
+static __weak RCTRootViewFactory *_rootViewFactory = nil;
 
 @implementation PasteInputModule
 
@@ -65,7 +65,7 @@ RCT_EXPORT_MODULE()
 + (void)setup:(RCTRootViewFactory *)rootViewFactory
 {
 #ifdef RCT_NEW_ARCH_ENABLED
-    _reactHost = rootViewFactory.reactHost;
+    _rootViewFactory = rootViewFactory;
 #endif
 }
 
@@ -185,9 +185,11 @@ RCT_EXPORT_MODULE()
 - (nullable id)getSurfacePresenter
 {
 #ifdef RCT_NEW_ARCH_ENABLED
-    // Try bridgeless mode first (if reactHost is set)
-    if (_reactHost) {
-        return [_reactHost performSelector:@selector(surfacePresenter)];
+    // Expo's scene delegate starts React after AppDelegate calls setup.
+    // Resolve the current host here, not the not-yet-created host during setup.
+    id reactHost = _rootViewFactory.reactHost;
+    if (reactHost) {
+        return [reactHost performSelector:@selector(surfacePresenter)];
     }
     // Fallback to bridge mode (Fabric with bridge enabled)
     else if (self.bridge) {
