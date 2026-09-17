@@ -29,6 +29,16 @@ static const char *kPasteInputModuleKey = "PasteInputModule";
 static const char *kPasteInputNativeIDKey = "PasteInputNativeID";
 static const char *kOriginalSmartQuotesKey = "PasteInputOriginalSmartQuotes";
 static const char *kOriginalSmartDashesKey = "PasteInputOriginalSmartDashes";
+static NSString *const PasteInputMentionAttributeName = @"PasteInputMentionAttribute";
+
+static UIColor *PasteInputColorFromARGB(NSNumber *value)
+{
+    uint32_t color = value != nil ? value.unsignedIntValue : 0xFF1890FF;
+    return [UIColor colorWithRed:((color >> 16) & 0xFF) / 255.0
+                           green:((color >> 8) & 0xFF) / 255.0
+                            blue:(color & 0xFF) / 255.0
+                           alpha:((color >> 24) & 0xFF) / 255.0];
+}
 
 // Forward declarations for IMP functions
 static void pasteInputInterceptedPasteIMP(id self, SEL _cmd, id sender);
@@ -96,7 +106,9 @@ RCT_EXPORT_MODULE()
     // Convert config struct to NSDictionary
     NSDictionary *configDict = @{
         @"disableCopyPaste": @(config.disableCopyPaste().value_or(false)),
-        @"smartPunctuation": config.smartPunctuation() ?: @"default"
+        @"smartPunctuation": config.smartPunctuation() ?: @"default",
+        @"mentionRangesJson": config.mentionRangesJson() ?: @"[]",
+        @"mentionTextColor": @(config.mentionTextColor().value_or((int32_t)0xFF1890FF))
     };
 
     // All access to registrationGenerations / registeredViews must happen on
@@ -285,6 +297,98 @@ RCT_EXPORT_MODULE()
 
 #pragma mark - Dynamic Subclassing
 
+- (NSArray<NSValue *> *)validMentionRangesForTextLength:(NSUInteger)textLength config:(NSDictionary *)config
+{
+    NSString *rangesJson = config[@"mentionRangesJson"];
+    if (![rangesJson isKindOfClass:[NSString class]] || rangesJson.length == 0 || [rangesJson isEqualToString:@"[]"]) {
+        return @[];
+    }
+
+    NSData *jsonData = [rangesJson dataUsingEncoding:NSUTF8StringEncoding];
+    id parsedJson = jsonData ? [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil] : nil;
+    if (![parsedJson isKindOfClass:[NSArray class]]) {
+        return @[];
+    }
+
+    NSMutableArray<NSValue *> *validRanges = [NSMutableArray array];
+    NSUInteger lastEnd = 0;
+    for (id item in (NSArray *)parsedJson) {
+        if (![item isKindOfClass:[NSDictionary class]]) {
+            continue;
+        }
+
+        NSInteger start = [item[@"start"] integerValue];
+        NSInteger end = [item[@"end"] integerValue];
+        if (start < 0 || end <= start || (NSUInteger)end > textLength || (NSUInteger)start < lastEnd) {
+            continue;
+        }
+
+        [validRanges addObject:[NSValue valueWithRange:NSMakeRange((NSUInteger)start, (NSUInteger)(end - start))]];
+        lastEnd = (NSUInteger)end;
+    }
+    return validRanges;
+}
+
+- (void)applyMentionFormattingToAttributedString:(NSMutableAttributedString *)text
+                                       baseColor:(nullable UIColor *)baseColor
+                                          config:(NSDictionary *)config
+{
+    if (text.length == 0) {
+        return;
+    }
+
+    NSRange fullRange = NSMakeRange(0, text.length);
+    NSMutableArray<NSValue *> *previousRanges = [NSMutableArray array];
+    [text enumerateAttribute:PasteInputMentionAttributeName
+                     inRange:fullRange
+                     options:0
+                  usingBlock:^(id value, NSRange range, BOOL *stop) {
+        if (value != nil) {
+            [previousRanges addObject:[NSValue valueWithRange:range]];
+        }
+    }];
+
+    for (NSValue *rangeValue in previousRanges) {
+        NSRange range = rangeValue.rangeValue;
+        [text removeAttribute:PasteInputMentionAttributeName range:range];
+        if (baseColor != nil) {
+            [text addAttribute:NSForegroundColorAttributeName value:baseColor range:range];
+        } else {
+            [text removeAttribute:NSForegroundColorAttributeName range:range];
+        }
+    }
+
+    UIColor *mentionColor = PasteInputColorFromARGB(config[@"mentionTextColor"]);
+    for (NSValue *rangeValue in [self validMentionRangesForTextLength:text.length config:config]) {
+        NSRange range = rangeValue.rangeValue;
+        [text addAttribute:NSForegroundColorAttributeName value:mentionColor range:range];
+        [text addAttribute:PasteInputMentionAttributeName value:@YES range:range];
+    }
+}
+
+- (void)applyMentionFormattingToView:(UIView *)view config:(NSDictionary *)config
+{
+    if ([view isKindOfClass:[UITextView class]]) {
+        UITextView *textView = (UITextView *)view;
+        CGPoint contentOffset = textView.contentOffset;
+        [textView.textStorage beginEditing];
+        [self applyMentionFormattingToAttributedString:textView.textStorage
+                                             baseColor:textView.textColor
+                                                config:config];
+        [textView.textStorage endEditing];
+        textView.contentOffset = contentOffset;
+    } else if ([view isKindOfClass:[UITextField class]]) {
+        UITextField *textField = (UITextField *)view;
+        NSMutableAttributedString *text = [textField.attributedText mutableCopy];
+        if (text != nil) {
+            [self applyMentionFormattingToAttributedString:text
+                                                 baseColor:textField.textColor
+                                                    config:config];
+            textField.attributedText = text;
+        }
+    }
+}
+
 /**
  * Apply smart punctuation settings to the text view
  */
@@ -333,6 +437,7 @@ RCT_EXPORT_MODULE()
         // Already subclassed, just update config
         objc_setAssociatedObject(view, kPasteInputConfigKey, config, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         [self applySmartPunctuationSettings:view config:config];
+        [self applyMentionFormattingToView:view config:config];
         return;
     }
 
@@ -356,6 +461,7 @@ RCT_EXPORT_MODULE()
 
     // Apply smartPunctuation setting to UITextView/UITextField
     [self applySmartPunctuationSettings:view config:config];
+    [self applyMentionFormattingToView:view config:config];
 
     NSString *className = NSStringFromClass(originalClass);
     NSString *dynamicClassName = [NSString stringWithFormat:@"PasteInput_%@", className];

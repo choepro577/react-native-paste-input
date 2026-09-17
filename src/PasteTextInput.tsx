@@ -10,6 +10,7 @@ import type {
     Selection,
     SubmitBehavior,
 } from './types';
+import { serializeMentionRanges } from './mentions';
 import {
     Platform,
     Text,
@@ -64,8 +65,15 @@ function InternalTextInput(props: PasteInputProps): React.ReactNode {
         selectionColor,
         selectionHandleColor,
         cursorColor,
+        mentionRanges,
+        mentionTextColor,
         ...otherProps
     } = props;
+
+    const mentionRangesJson = React.useMemo(
+        () => serializeMentionRanges(mentionRanges),
+        [mentionRanges]
+    );
 
     const inputRef = React.useRef<null | React.ElementRef<
         HostComponent<unknown>
@@ -436,6 +444,8 @@ function InternalTextInput(props: PasteInputProps): React.ReactNode {
             focusable={tabIndex !== undefined ? !tabIndex : focusable}
             importantForAccessibility={_importantForAccessibility}
             mostRecentEventCount={mostRecentEventCount}
+            mentionRangesJson={mentionRangesJson}
+            mentionTextColor={mentionTextColor}
             nativeID={id ?? props.nativeID}
             numberOfLines={props.rows ?? props.numberOfLines}
             onBlur={_onBlur}

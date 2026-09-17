@@ -1,6 +1,6 @@
 {
   "name": "@mattermost/react-native-paste-input",
-  "version": "2.0.1",
+  "version": "2.0.1-prowtech.1",
   "description": "React Native TextInput replacement to allow pasting files (Fabric only)",
   "main": "lib/commonjs/index.js",
   "module": "lib/module/index.js",
@@ -43,13 +43,13 @@
     "paste",
     "text-input"
   ],
-  "repository": "https://github.com/mattermost/react-native-paste-input",
+  "repository": "https://github.com/choepro577/react-native-paste-input",
   "author": "Elias Nahum <nahumhbl@gmail.com> (https://github.com/mattermost)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mattermost/react-native-paste-input/issues"
+    "url": "https://github.com/choepro577/react-native-paste-input/issues"
   },
-  "homepage": "https://github.com/mattermost/react-native-paste-input#readme",
+  "homepage": "https://github.com/choepro577/react-native-paste-input#readme",
   "devDependencies": {
     "@commitlint/config-conventional": "20.5.0",
     "@react-native/eslint-config": "0.83.6",

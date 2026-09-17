@@ -27,6 +27,7 @@ import React, {
     useImperativeHandle,
 } from 'react';
 import { Platform, TextInput, NativeEventEmitter } from 'react-native';
+import { processColor } from 'react-native';
 import type {
     PastedFile,
     PasteInputProps,
@@ -34,6 +35,7 @@ import type {
 } from './types';
 import NativePasteInputModule from './NativePasteInputModule';
 import PasteTextInput from './PasteTextInput';
+import { serializeMentionRanges } from './mentions';
 
 // In Fabric, TurboModules can be used directly as the event emitter (iOS only)
 const PasteInputEventEmitter =
@@ -49,8 +51,20 @@ function PasteInputIOSComponent(
         onPaste,
         disableCopyPaste = false,
         smartPunctuation = 'default',
+        mentionRanges,
+        mentionTextColor,
         ...textInputProps
     } = props;
+
+    const mentionRangesJson = React.useMemo(
+        () => serializeMentionRanges(mentionRanges),
+        [mentionRanges]
+    );
+    const processedMentionColor = processColor(mentionTextColor);
+    const mentionTextColorValue =
+        typeof processedMentionColor === 'number'
+            ? processedMentionColor
+            : undefined;
 
     const textInputRef = useRef<TextInput>(null);
     const nativeIDRef = useRef<string | null>(null);
@@ -97,6 +111,8 @@ function PasteInputIOSComponent(
         NativePasteInputModule.registerTextInput(nativeID, {
             disableCopyPaste,
             smartPunctuation,
+            mentionRangesJson,
+            mentionTextColor: mentionTextColorValue,
         });
 
         // Listen for paste events
@@ -127,9 +143,17 @@ function PasteInputIOSComponent(
             NativePasteInputModule.registerTextInput(nativeIDRef.current, {
                 disableCopyPaste,
                 smartPunctuation,
+                mentionRangesJson,
+                mentionTextColor: mentionTextColorValue,
             });
         }
-    }, [disableCopyPaste, smartPunctuation]);
+    }, [
+        disableCopyPaste,
+        mentionRangesJson,
+        mentionTextColorValue,
+        smartPunctuation,
+        textInputProps.value,
+    ]);
 
     return <TextInput ref={textInputRef} {...textInputProps} />;
 }

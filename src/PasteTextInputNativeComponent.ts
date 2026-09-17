@@ -189,6 +189,8 @@ export interface NativeProps extends ViewProps {
     keyboardType?: WithDefault<KeyboardType, 'default'>;
     maxFontSizeMultiplier?: Float;
     maxLength?: Int32;
+    mentionRangesJson?: string;
+    mentionTextColor?: ColorValue;
     mostRecentEventCount?: Int32;
     multiline?: boolean;
     numberOfLines?: Int32;
@@ -237,7 +239,7 @@ export interface NativeProps extends ViewProps {
     textShadowOffset?: Readonly<{ width?: Double; height?: Double }>;
     lineHeight?: Float;
     textTransform?: string;
-    color?: Int32;
+    color?: ColorValue;
     letterSpacing?: Float;
     fontSize?: Float;
     textAlign?: string;

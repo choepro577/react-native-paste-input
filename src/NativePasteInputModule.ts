@@ -7,10 +7,13 @@
 
 import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
+import type { Int32 } from 'react-native/Libraries/Types/CodegenTypes';
 
 export interface PasteInputConfig {
     disableCopyPaste?: boolean;
     smartPunctuation?: string; // 'default' | 'enable' | 'disable' (union types not supported in codegen)
+    mentionRangesJson?: string;
+    mentionTextColor?: Int32;
 }
 
 export interface Spec extends TurboModule {

@@ -1,5 +1,5 @@
 import type { ForwardedRef } from 'react';
-import type { HostComponent, TextInputProps } from 'react-native';
+import type { ColorValue, HostComponent, TextInputProps } from 'react-native';
 import type { Int32 } from 'react-native/Libraries/Types/CodegenTypes';
 
 type HostInstance = InstanceType<HostComponent<PasteInputProps>>;
@@ -27,6 +27,12 @@ export interface PasteEvent {
     };
 }
 
+export interface MentionRangeStyle {
+    start: number;
+    end: number;
+    kind?: string;
+}
+
 /**
  * Smart punctuation settings for iOS
  */
@@ -46,6 +52,12 @@ export interface PasteInputProps extends TextInputProps {
      * Disable copy, cut, and paste actions
      */
     disableCopyPaste?: boolean;
+
+    /** Character ranges rendered with mentionTextColor. */
+    mentionRanges?: MentionRangeStyle[];
+
+    /** Text color used for mentionRanges. */
+    mentionTextColor?: ColorValue;
 
     /**
      * Configure smart punctuation (iOS only)

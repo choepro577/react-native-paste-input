@@ -171,6 +171,13 @@ Controls iOS smart punctuation behavior.
 
 **Default:** `'default'`
 
+#### `mentionRanges?: MentionRangeStyle[]`
+Applies native text styling to UTF-16 ranges used by mentions. Each range has
+`start`, `end`, and an optional `kind` identifier.
+
+#### `mentionTextColor?: ColorValue`
+Provides the default color for mention ranges that do not define their own color.
+
 ### Types
 
 ```typescript
